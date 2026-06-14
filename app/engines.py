@@ -1,10 +1,10 @@
-import pymupdf4llm  # type: ignore
-import pypdfium2 as pdfium  # type: ignore
-from pdf_oxide import PdfDocument  # type: ignore
+import pymupdf4llm
+import pypdfium2 as pdfium
+from pdf_oxide import PdfDocument
 
 
 def parse_with_pdf_oxide(file_path: str) -> str:
-    """Rust-based pdf_oxide parsing"""
+    """pdf_oxide parsing"""
     pages_text = []
     try:
         with PdfDocument(file_path) as doc:
@@ -18,7 +18,7 @@ def parse_with_pdf_oxide(file_path: str) -> str:
 
 
 def parse_with_pypdfium2(file_path: str) -> str:
-    """Google Chrome PDFium engine based pypdfium2 parsing"""
+    """pypdfium2 parsing"""
     pdf = None
     pages_text = []
     try:
@@ -39,9 +39,8 @@ def parse_with_pypdfium2(file_path: str) -> str:
             pdf.close()
 
 
-
 def parse_with_pymupdf4llm(file_path: str) -> str:
-    """AGPL licensed pymupdf4llm parsing"""
+    """pymupdf4llm parsing"""
     try:
         return pymupdf4llm.to_markdown(file_path)
     except Exception as e:
