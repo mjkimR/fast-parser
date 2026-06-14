@@ -15,11 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy pyproject.toml and install dependencies
-COPY apps/fast-parser/pyproject.toml ./
+COPY pyproject.toml ./
 RUN uv pip install --system -r pyproject.toml
 
 # Copy application code
-COPY apps/fast-parser/app/ ./app/
+COPY app/ ./app/
 
 EXPOSE 8000
 
