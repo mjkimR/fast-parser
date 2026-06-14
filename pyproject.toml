@@ -1,0 +1,13 @@
+[project]
+name = "fast-parser"
+version = "0.1.0"
+description = "Lightweight PDF to markdown/text parsing microservice"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+    "python-multipart>=0.0.9",
+    "pypdfium2>=4.28.0",
+    "pdf-oxide>=0.3.34",
+    "pymupdf4llm>=0.0.17",
+    "loguru>=0.7.2",
+]
