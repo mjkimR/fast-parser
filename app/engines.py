@@ -19,9 +19,10 @@ def parse_with_pdf_oxide(file_path: str) -> str:
 
 def parse_with_pypdfium2(file_path: str) -> str:
     """Google Chrome PDFium engine based pypdfium2 parsing"""
-    pdf = pdfium.PdfDocument(file_path)
+    pdf = None
     pages_text = []
     try:
+        pdf = pdfium.PdfDocument(file_path)
         for i in range(len(pdf)):
             page = pdf.get_page(i)
             textpage = page.get_textpage()
@@ -34,7 +35,9 @@ def parse_with_pypdfium2(file_path: str) -> str:
     except Exception as e:
         raise RuntimeError(f"pypdfium2 parsing failed: {e}") from e
     finally:
-        pdf.close()
+        if pdf is not None:
+            pdf.close()
+
 
 
 def parse_with_pymupdf4llm(file_path: str) -> str:
