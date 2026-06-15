@@ -2,7 +2,9 @@
 name = "fast-parser"
 version = "0.1.0"
 description = "Lightweight PDF to markdown/text parsing microservice"
+requires-python = ">=3.13"
 dependencies = [
+
     "fastapi>=0.110.0",
     "uvicorn>=0.28.0",
     "python-multipart>=0.0.9",
@@ -21,4 +23,34 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::Warning",
+]
 
+
+[tool.ruff]
+exclude = [".git", ".venv", "migrations"]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = ["F403", "E402"]
+"__init__.py" = ["F403"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+extraPaths = [
+    "./",
+]

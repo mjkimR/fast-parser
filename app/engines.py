@@ -42,6 +42,16 @@ def parse_with_pypdfium2(file_path: str) -> str:
 def parse_with_pymupdf4llm(file_path: str) -> str:
     """pymupdf4llm parsing"""
     try:
-        return pymupdf4llm.to_markdown(file_path)
+        result = pymupdf4llm.to_markdown(file_path)
+        if isinstance(result, str):
+            return result
+        if isinstance(result, list):
+            pages_text = []
+            for chunk in result:
+                if isinstance(chunk, dict) and "text" in chunk:
+                    pages_text.append(chunk["text"])
+            return "\n\n".join(pages_text)
+        raise TypeError(f"Expected str or list from to_markdown, got {type(result)}")
     except Exception as e:
         raise RuntimeError(f"pymupdf4llm parsing failed: {e}") from e
+

@@ -69,9 +69,31 @@ def test_parse_with_pymupdf4llm_success(mock_to_markdown):
 
 
 @patch("app.engines.pymupdf4llm.to_markdown")
+def test_parse_with_pymupdf4llm_list_success(mock_to_markdown):
+    mock_to_markdown.return_value = [
+        {"text": "# Page 1 Markdown"},
+        {"text": "# Page 2 Markdown"},
+    ]
+    result = parse_with_pymupdf4llm("dummy.pdf")
+    assert result == "# Page 1 Markdown\n\n# Page 2 Markdown"
+    mock_to_markdown.assert_called_once_with("dummy.pdf")
+
+
+
+@patch("app.engines.pymupdf4llm.to_markdown")
 def test_parse_with_pymupdf4llm_failure(mock_to_markdown):
     mock_to_markdown.side_effect = Exception("MuPDF error")
 
     with pytest.raises(RuntimeError) as exc_info:
         parse_with_pymupdf4llm("dummy.pdf")
     assert "pymupdf4llm parsing failed" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "parse_func",
+    [parse_with_pdf_oxide, parse_with_pypdfium2, parse_with_pymupdf4llm],
+)
+def test_engines_integration_success(simple_pdf_path, parse_func):
+    result = parse_func(simple_pdf_path)
+    assert "simple" in result.lower()
+
