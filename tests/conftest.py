@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 
 @pytest.fixture
 def simple_pdf_path() -> str:

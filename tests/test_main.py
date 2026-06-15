@@ -1,11 +1,11 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 
 client = TestClient(app)
-
 
 
 def test_parse_pdf_invalid_extension():
@@ -95,4 +95,3 @@ def test_parse_pdf_integration_success(simple_pdf_bytes, engine):
     data = response.json()
     assert data["engine"] == engine
     assert "simple" in data["content"].lower()
-

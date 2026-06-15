@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from app.engines import (
@@ -79,7 +80,6 @@ def test_parse_with_pymupdf4llm_list_success(mock_to_markdown):
     mock_to_markdown.assert_called_once_with("dummy.pdf")
 
 
-
 @patch("app.engines.pymupdf4llm.to_markdown")
 def test_parse_with_pymupdf4llm_failure(mock_to_markdown):
     mock_to_markdown.side_effect = Exception("MuPDF error")
@@ -96,4 +96,3 @@ def test_parse_with_pymupdf4llm_failure(mock_to_markdown):
 def test_engines_integration_success(simple_pdf_path, parse_func):
     result = parse_func(simple_pdf_path)
     assert "simple" in result.lower()
-
