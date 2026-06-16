@@ -31,16 +31,14 @@ async def _execute_parse(file: UploadFile, parse_func, engine_name: str):
 
         # 2. Parse PDF with the requested engine function
         result = parse_func(tmp_path)
-        return {"engine": engine_name, "content": result}
+        return {"engine": engine_name, **result}
 
     except RuntimeError as e:
         logger.error(f"PDF parsing runtime error for {engine_name}: {e}")
         raise HTTPException(status_code=400, detail=f"Parsing failed: {e!s}") from e
     except Exception as e:
         logger.exception(f"Unexpected error during PDF parsing for {engine_name}: {e}")
-        raise HTTPException(
-            status_code=500, detail="Internal server error during PDF parsing"
-        ) from e
+        raise HTTPException(status_code=500, detail="Internal server error during PDF parsing") from e
     finally:
         # 3. Clean up temp file safely
         if tmp_path and os.path.exists(tmp_path):

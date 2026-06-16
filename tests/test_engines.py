@@ -17,7 +17,12 @@ def test_parse_with_pdf_oxide_success(mock_pdf_doc):
     mock_pdf_doc.return_value.__enter__.return_value = mock_doc_instance
 
     result = parse_with_pdf_oxide("dummy.pdf")
-    assert result == "Page 1 text\n\nPage 2 text"
+    assert result == {
+        "pages": [
+            {"page_no": 1, "text": "Page 1 text"},
+            {"page_no": 2, "text": "Page 2 text"},
+        ]
+    }
     mock_doc_instance.extract_text.assert_any_call(0)
     mock_doc_instance.extract_text.assert_any_call(1)
 
@@ -44,7 +49,7 @@ def test_parse_with_pypdfium2_success(mock_pdf_doc):
     mock_pdf_doc.return_value = mock_pdf
 
     result = parse_with_pypdfium2("dummy.pdf")
-    assert result == "Hello PDFium"
+    assert result == {"pages": [{"page_no": 1, "text": "Hello PDFium"}]}
     mock_pdf.get_page.assert_called_once_with(0)
     mock_page.get_textpage.assert_called_once()
     mock_textpage.close.assert_called_once()
@@ -63,21 +68,30 @@ def test_parse_with_pypdfium2_failure(mock_pdf_doc):
 
 @patch("app.engines.pymupdf4llm.to_markdown")
 def test_parse_with_pymupdf4llm_success(mock_to_markdown):
-    mock_to_markdown.return_value = "# Markdown Content"
+    # Mock both calls: one for standard markdown and one for page_chunks
+    mock_to_markdown.side_effect = ["# Markdown Content", [{"metadata": {"page": 0}, "text": "# Markdown Content"}]]
     result = parse_with_pymupdf4llm("dummy.pdf")
-    assert result == "# Markdown Content"
-    mock_to_markdown.assert_called_once_with("dummy.pdf")
+    assert result == {"markdown": "# Markdown Content", "pages": [{"page_no": 1, "text": "# Markdown Content"}]}
+    mock_to_markdown.assert_any_call("dummy.pdf")
+    mock_to_markdown.assert_any_call("dummy.pdf", page_chunks=True)
 
 
 @patch("app.engines.pymupdf4llm.to_markdown")
 def test_parse_with_pymupdf4llm_list_success(mock_to_markdown):
-    mock_to_markdown.return_value = [
-        {"text": "# Page 1 Markdown"},
-        {"text": "# Page 2 Markdown"},
+    mock_to_markdown.side_effect = [
+        [{"text": "# Page 1 Markdown"}, {"text": "# Page 2 Markdown"}],
+        [
+            {"metadata": {"page": 0}, "text": "# Page 1 Markdown"},
+            {"metadata": {"page": 1}, "text": "# Page 2 Markdown"},
+        ],
     ]
     result = parse_with_pymupdf4llm("dummy.pdf")
-    assert result == "# Page 1 Markdown\n\n# Page 2 Markdown"
-    mock_to_markdown.assert_called_once_with("dummy.pdf")
+    assert result == {
+        "markdown": "# Page 1 Markdown\n\n# Page 2 Markdown",
+        "pages": [{"page_no": 1, "text": "# Page 1 Markdown"}, {"page_no": 2, "text": "# Page 2 Markdown"}],
+    }
+    mock_to_markdown.assert_any_call("dummy.pdf")
+    mock_to_markdown.assert_any_call("dummy.pdf", page_chunks=True)
 
 
 @patch("app.engines.pymupdf4llm.to_markdown")
@@ -95,4 +109,8 @@ def test_parse_with_pymupdf4llm_failure(mock_to_markdown):
 )
 def test_engines_integration_success(simple_pdf_path, parse_func):
     result = parse_func(simple_pdf_path)
-    assert "simple" in result.lower()
+    assert "pages" in result
+    assert len(result["pages"]) > 0
+    assert "simple" in result["pages"][0]["text"].lower()
+    if parse_func == parse_with_pymupdf4llm:
+        assert "markdown" in result
