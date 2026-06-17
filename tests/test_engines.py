@@ -5,7 +5,6 @@ import pytest
 from app.engines import (
     parse_with_pdf_oxide,
     parse_with_pymupdf4llm,
-    parse_with_pypdfium2,
 )
 
 
@@ -13,18 +12,29 @@ from app.engines import (
 def test_parse_with_pdf_oxide_success(mock_pdf_doc):
     mock_doc_instance = MagicMock()
     mock_doc_instance.page_count.return_value = 2
-    mock_doc_instance.extract_text.side_effect = ["Page 1 text", "Page 2 text"]
+    mock_doc_instance.extract_structured.side_effect = [
+        '{"page_index": 0, "page_width": 100, "page_height": 100, "regions": [{"kind": "BodyBlock", "text": "Page 1 text", "bbox": {"x": 10, "y": 20, "width": 30, "height": 40}}]}',
+        '{"page_index": 1, "page_width": 100, "page_height": 100, "regions": [{"kind": "BodyBlock", "text": "Page 2 text", "bbox": {"x": 15, "y": 25, "width": 35, "height": 45}}]}',
+    ]
     mock_pdf_doc.return_value.__enter__.return_value = mock_doc_instance
 
     result = parse_with_pdf_oxide("dummy.pdf")
     assert result == {
         "pages": [
-            {"page_no": 1, "text": "Page 1 text"},
-            {"page_no": 2, "text": "Page 2 text"},
+            {
+                "page_no": 1,
+                "text": "Page 1 text",
+                "page_boxes": [{"class": "bodyblock", "bbox": [10.0, 20.0, 40.0, 60.0], "pos": [0, 11]}],
+            },
+            {
+                "page_no": 2,
+                "text": "Page 2 text",
+                "page_boxes": [{"class": "bodyblock", "bbox": [15.0, 25.0, 50.0, 70.0], "pos": [0, 11]}],
+            },
         ]
     }
-    mock_doc_instance.extract_text.assert_any_call(0)
-    mock_doc_instance.extract_text.assert_any_call(1)
+    mock_doc_instance.extract_structured.assert_any_call(0)
+    mock_doc_instance.extract_structured.assert_any_call(1)
 
 
 @patch("app.engines.PdfDocument")
@@ -36,42 +46,12 @@ def test_parse_with_pdf_oxide_failure(mock_pdf_doc):
     assert "pdf_oxide parsing failed" in str(exc_info.value)
 
 
-@patch("app.engines.pdfium.PdfDocument")
-def test_parse_with_pypdfium2_success(mock_pdf_doc):
-    mock_pdf = MagicMock()
-    mock_pdf.__len__.return_value = 1
-    mock_page = MagicMock()
-    mock_textpage = MagicMock()
-    mock_textpage.get_text_bounded.return_value = "Hello PDFium"
-
-    mock_page.get_textpage.return_value = mock_textpage
-    mock_pdf.get_page.return_value = mock_page
-    mock_pdf_doc.return_value = mock_pdf
-
-    result = parse_with_pypdfium2("dummy.pdf")
-    assert result == {"pages": [{"page_no": 1, "text": "Hello PDFium"}]}
-    mock_pdf.get_page.assert_called_once_with(0)
-    mock_page.get_textpage.assert_called_once()
-    mock_textpage.close.assert_called_once()
-    mock_page.close.assert_called_once()
-    mock_pdf.close.assert_called_once()
-
-
-@patch("app.engines.pdfium.PdfDocument")
-def test_parse_with_pypdfium2_failure(mock_pdf_doc):
-    mock_pdf_doc.side_effect = Exception("PDFium error")
-
-    with pytest.raises(RuntimeError) as exc_info:
-        parse_with_pypdfium2("dummy.pdf")
-    assert "pypdfium2 parsing failed" in str(exc_info.value)
-
-
 @patch("app.engines.pymupdf4llm.to_markdown")
 def test_parse_with_pymupdf4llm_success(mock_to_markdown):
     # Mock both calls: one for standard markdown and one for page_chunks
     mock_to_markdown.side_effect = ["# Markdown Content", [{"metadata": {"page": 0}, "text": "# Markdown Content"}]]
     result = parse_with_pymupdf4llm("dummy.pdf")
-    assert result == {"markdown": "# Markdown Content", "pages": [{"page_no": 1, "text": "# Markdown Content"}]}
+    assert result == {"markdown": "# Markdown Content", "pages": [{"page_no": 1, "text": "# Markdown Content", "page_boxes": []}]}
     mock_to_markdown.assert_any_call("dummy.pdf")
     mock_to_markdown.assert_any_call("dummy.pdf", page_chunks=True)
 
@@ -88,7 +68,10 @@ def test_parse_with_pymupdf4llm_list_success(mock_to_markdown):
     result = parse_with_pymupdf4llm("dummy.pdf")
     assert result == {
         "markdown": "# Page 1 Markdown\n\n# Page 2 Markdown",
-        "pages": [{"page_no": 1, "text": "# Page 1 Markdown"}, {"page_no": 2, "text": "# Page 2 Markdown"}],
+        "pages": [
+            {"page_no": 1, "text": "# Page 1 Markdown", "page_boxes": []},
+            {"page_no": 2, "text": "# Page 2 Markdown", "page_boxes": []},
+        ],
     }
     mock_to_markdown.assert_any_call("dummy.pdf")
     mock_to_markdown.assert_any_call("dummy.pdf", page_chunks=True)
@@ -105,7 +88,7 @@ def test_parse_with_pymupdf4llm_failure(mock_to_markdown):
 
 @pytest.mark.parametrize(
     "parse_func",
-    [parse_with_pdf_oxide, parse_with_pypdfium2, parse_with_pymupdf4llm],
+    [parse_with_pdf_oxide, parse_with_pymupdf4llm],
 )
 def test_engines_integration_success(simple_pdf_path, parse_func):
     result = parse_func(simple_pdf_path)

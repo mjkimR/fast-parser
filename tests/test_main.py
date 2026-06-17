@@ -30,18 +30,7 @@ def test_parse_pdf_oxide_success(mock_parse):
     mock_parse.assert_called_once()
 
 
-@patch("app.main.parse_with_pypdfium2")
-def test_parse_pypdfium2_success(mock_parse):
-    mock_parse.return_value = {"pages": [{"page_no": 1, "text": "parsed content pdfium"}]}
-    file_content = b"%PDF-1.4 mock pdf data"
-    files = {"file": ("test.pdf", file_content, "application/pdf")}
 
-    response = client.post("/pypdfium2/parse", files=files)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["engine"] == "pypdfium2"
-    assert data["pages"] == [{"page_no": 1, "text": "parsed content pdfium"}]
-    mock_parse.assert_called_once()
 
 
 @patch("app.main.parse_with_pymupdf4llm")
@@ -91,7 +80,7 @@ def test_parse_pdf_unexpected_error(mock_parse):
     assert "Internal server error" in response.json()["detail"]
 
 
-@pytest.mark.parametrize("engine", ["pdf_oxide", "pypdfium2", "pymupdf4llm"])
+@pytest.mark.parametrize("engine", ["pdf_oxide", "pymupdf4llm"])
 def test_parse_pdf_integration_success(simple_pdf_bytes, engine):
     files = {"file": ("simple.pdf", simple_pdf_bytes, "application/pdf")}
     response = client.post(f"/{engine}/parse", files=files)

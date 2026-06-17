@@ -8,7 +8,6 @@ from loguru import logger
 from app.engines import (
     parse_with_pdf_oxide,
     parse_with_pymupdf4llm,
-    parse_with_pypdfium2,
 )
 
 app = FastAPI(
@@ -52,12 +51,6 @@ async def _execute_parse(file: UploadFile, parse_func, engine_name: str):
 async def parse_pdf_oxide(file: Annotated[UploadFile, File(...)]):
     """Parse a PDF document using the pdf_oxide engine."""
     return await _execute_parse(file, parse_with_pdf_oxide, "pdf_oxide")
-
-
-@app.post("/pypdfium2/parse")
-async def parse_pypdfium2(file: Annotated[UploadFile, File(...)]):
-    """Parse a PDF document using the pypdfium2 engine."""
-    return await _execute_parse(file, parse_with_pypdfium2, "pypdfium2")
 
 
 @app.post("/pymupdf4llm/parse")
